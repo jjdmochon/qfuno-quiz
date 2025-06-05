@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Flashcards: Química Farmacéutica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .option-button {
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .option-button:hover {
+            transform: translateY(-2px);
+        }
+        .correct {
+            background-color: #28a745 !important; /* Verde Bootstrap Success */
+            color: white !important;
+            border-color: #28a745 !important;
+        }
+        .incorrect {
+            background-color: #dc3545 !important; /* Rojo Bootstrap Danger */
+            color: white !important;
+            border-color: #dc3545 !important;
+        }
+        .actual-correct { /* Para resaltar la correcta si el usuario se equivoca */
+            border: 2px solid #17a2b8 !important; /* Cyan Bootstrap Info */
+            box-shadow: 0 0 10px #17a2b8;
+        }
+        /* Estilo para el contenedor de explicación con scroll si es necesario */
+        .explanation-content {
+            max-height: 200px; /* Altura máxima antes de que aparezca el scroll */
+            overflow-y: auto; /* Scroll vertical si el contenido excede la altura máxima */
+            padding-right: 10px; /* Espacio para la barra de scroll */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl sm:text-3xl font-bold text-sky-700">Química Farmacéutica 1 UGR </h1>
+            <div id="progress-and-score" class="mt-2 text-sm text-slate-600 flex justify-between">
+                <span id="progress-text">Pregunta 1 / 77</span> <!-- Actualizado el total de preguntas -->
+                <span id="score-text">Puntuación: 0</span>
+            </div>
+        </header>
+
+        <main id="card-area">
+            <div id="question-container" class="mb-6">
+                <p id="question-text" class="text-lg sm:text-xl font-semibold text-slate-800"></p>
+            </div>
+
+            <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
+                <!-- Las opciones se cargarán aquí -->
+            </div>
+
+            <div id="feedback-container" class="mb-6 p-4 rounded-lg bg-slate-50 border border-slate-200 hidden">
+                <p id="feedback-text" class="text-lg font-bold mb-2"></p>
+                <div class="explanation-content">
+                    <p id="explanation-text" class="text-sm text-slate-700 prose"></p>
+                </div>
+            </div>
+        </main>
+        
+        <footer id="navigation-container" class="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <button id="restart-button" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Reiniciar Juego
+            </button>
+            <button id="next-button" class="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md hidden transition duration-150 ease-in-out">
+                Siguiente
+            </button>
+        </footer>
+
+        <div id="results-container" class="hidden text-center p-6">
+            <h2 class="text-2xl font-bold text-sky-700 mb-4">¡Juego Terminado!</h2>
+            <p id="final-score-text" class="text-xl text-slate-800 mb-6"></p>
+            <button id="play-again-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md text-lg transition duration-150 ease-in-out">
+                Jugar de Nuevo
+            </button>
+           
+        </div>
+         <!-- Signature -->
+         <p class="text-xs text-gray-500 mt-8 text-center">Flashcards por Juan J. Díaz-Mochón</p>
+    </div>
+
+    <script>
+        const questions = [
+            // Pregunta 1
+            {
+                id: 1,
+                question: "¿Cuál es uno de los objetivos fundamentales de la Química Farmacéutica?",
+                options: [
+                    { id: "a", text: "Crear los mejores fármacos posibles: más potentes, más selectivos y menos tóxicos." },
+                    { id: "b", text: "Sintetizar únicamente compuestos orgánicos complejos." },
+                    { id: "c", text: "Maximizar la velocidad de descubrimiento de nuevos compuestos químicos." },
+                    { id: "d", text: "Centrarse exclusivamente en la producción a gran escala de medicamentos existentes." }
+                ],
+                correctAnswer: "a",
+                explanation: "La Química Farmacéutica es desarrollar fármacos que sean más potentes, más selectivos y menos tóxicos."
+            },
+            // Pregunta 2
+            {
+                id: 2,
+                question: "En el sistema de clasificación ATC (Clasificación Anatómica, Terapéutica, Química), de cinco niveles, ¿qué información se representa en el primer nivel?",
+                options: [
+                    { id: "a", text: "El subgrupo farmacológico." },
+                    { id: "b", text: "El órgano o sistema anatómico principal sobre el que actúa el fármaco." },
+                    { id: "c", text: "La estructura química del principio activo." },
+                    { id: "d", text: "El subgrupo químico." }
+                ],
+                correctAnswer: "b",
+                explanation: "El código ATC clasifica los fármacos en cinco niveles, donde el primer nivel utiliza una letra para indicar el órgano o sistema anatómico principal."
+            },
+            // Pregunta 3
+            {
+                id: 3,
+                question: "El cribado (screening) de alto rendimiento (high-throughput screening) es una técnica de búsqueda de nuevos fármacos que consiste en:",
+                options: [
+                    { id: "a", text: "Aplicar ensayos biológicos muy detallados a un reducido número de moléculas." },
+                    { id: "b", text: "Buscar actividad biológica en productos naturales de forma selectiva." },
+                    { id: "c", text: "Someter un gran número de compuestos químicos a una batería de ensayos biológicos." },
+                    { id: "d", text: "Diseñar compuestos basándose en la estructura tridimensional de una diana biológica." }
+                ],
+                correctAnswer: "c",
+                explanation: "El cribado de alto rendimiento implica someter miles de compuestos a un gran número de ensayos biológicos para buscar una acción desconocida o hipotética."
+            },
+            // Pregunta 4
+            {
+                id: 4,
+                question: "¿Cómo se define un prototipo o cabeza de serie en el contexto del desarrollo de fármacos?",
+                options: [
+                    { id: "a", text: "La forma farmacéutica original de un principio activo." },
+                    { id: "b", text: "Un medicamento que ya ha completado la Fase III de ensayos clínicos." },
+                    { id: "c", text: "Un compuesto farmacológicamente inactivo utilizado como material de partida en una síntesis." },
+                    { id: "d", text: "El compuesto inicial que muestra la primera pista de estar en el camino correcto para el desarrollo de un fármaco." }
+                ],
+                correctAnswer: "d",
+                explanation: "Un prototipo o cabeza de serie se describe como el punto de partida, el compuesto que da la primera pista de estar en el camino correcto para desarrollar un fármaco."
+            },
+            // Pregunta 5
+            {
+                id: 5,
+                question: "La aproximación modulativa es un procedimiento de modificación estructural. ¿Cuál de las siguientes opciones NO es una técnica o concepto incluido dentro de la aproximación modulativa?",
+                options: [
+                    { id: "a", text: "Diseño racional basado en la diana molecular (diseño directo)." },
+                    { id: "b", text: "Isostería/Bioisostería." },
+                    { id: "c", text: "Homología." },
+                    { id: "d", text: "Apertura o formación de anillos." }
+                ],
+                correctAnswer: "a",
+                explanation: "La aproximación modulativa implica modificar la estructura de un prototipo existente utilizando técnicas como la vinilogía, isostería/bioisostería, homología, apertura/formación/variación de anillos, etc. El diseño racional directo, por contraste, es un procedimiento de búsqueda inicial que se lleva a cabo cuando se conoce la estructura tridimensional de la diana biológica, no una modificación de un prototipo existente."
+            },
+            // Pregunta 6
+            {
+                id: 6,
+                question: "Al comparar grupos bioisósteros para predecir su actividad biológica análoga, ¿cuál de los siguientes parámetros es considerado significativo?",
+                options: [
+                    { id: "a", text: "Acidez." },
+                    { id: "b", text: "Coeficiente de reparto en hexano." },
+                    { id: "c", text: "Velocidad de hidrólisis." },
+                    { id: "d", text: "Índice de refracción." }
+                ],
+                correctAnswer: "a",
+                explanation: "Los parámetros significativos para comparar bioisósteros con análoga actividad biológica incluyen el tamaño o volumen, la distribución electrónica, la acidez y la capacidad de formación de enlaces de hidrógeno."
+            },
+            // Pregunta 7
+            {
+                id: 7,
+                question: "En la nomenclatura IUPAC de compuestos heterocíclicos, ¿cómo se indica la presencia de heteroátomos?",
+                options: [
+                    { id: "a", text: "Se nombran al final del nombre de la molécula." },
+                    { id: "b", text: "Utilizando un sufijo diferente dependiendo del tipo de heteroátomo." },
+                    { id: "c", text: "Mediante prefijos (oxa- para O, tia- para S, aza- para N) y un localizador numérico." },
+                    { id: "d", text: "Se representan con letras mayúsculas dentro del nombre del ciclo." }
+                ],
+                correctAnswer: "c",
+                explanation: "Los heteroátomos en la nomenclatura de heterocíclicos se indican mediante prefijos como oxa- (O), tia- (S) o aza- (N), junto con un localizador numérico para indicar su posición en el anillo."
+            },
+            // Pregunta 8
+            {
+                id: 8,
+                question: "Un ejemplo histórico de descubrimiento de un nuevo uso terapéutico a partir de la observación de un efecto secundario inesperado (serendipia o enfoque SOSA) es la relación entre:",
+                options: [
+                    { id: "a", text: "Insulina (hipoglucemiante) y Digoxina (cardiotónico)." },
+                    { id: "b", text: "Morfina (analgésico) y Cocaína (anestésico local)." },
+                    { id: "c", text: "Penicilina (antimicrobiano) y Aspirina (analgésico)." },
+                    { id: "d", text: "Prometazina (antihistamínico) y Clorpromazina (neuroléptico)." }
+                ],
+                correctAnswer: "d",
+                explanation: "La explotación de información biológica, incluyendo las observaciones clínicas de efectos laterales. El ejemplo de las Sulfonamidas (de antibacterianos a diuréticos e hipoglucemiantes) se cita, y en el contexto histórico del descubrimiento se muestra la relación entre la Prometazina (antihistamínico con efecto sedante) y la Clorpromazina (neuroléptico) como un caso donde un efecto secundario inesperado condujo a un nuevo uso terapéutico."
+            },
+            // Pregunta 9
+            {
+                id: 9,
+                question: "Corwin Hansch, pionero en las Relaciones Cuantitativas Estructura-Actividad (QSAR) en la década de 1960, propuso el uso de descriptores numéricos para parametrizar los efectos de los sustituyentes en una molécula. ¿Cuáles son los tres tipos de parámetros fundamentales propuestos en su aproximación?",
+                options: [
+                    { id: "a", text: "Lipofilia (π), efectos electrónicos (σ) y efectos estéricos (E_s)." },
+                    { id: "b", text: "Temperatura, presión y volumen." },
+                    { id: "c", text: "Reactividad, solubilidad y punto de fusión." },
+                    { id: "d", text: "Peso molecular, número de enlaces rotables y área superficial polar." }
+                ],
+                correctAnswer: "a",
+                explanation: "La aproximación de Hansch en QSAR modela la actividad biológica como una combinación lineal de parámetros fisicoquímicos, proponiendo el uso de descriptores numéricos como el parámetro π para lipofilia, σ para efectos electrónicos y E_s para efectos estéricos."
+            },
+            // Pregunta 10
+            {
+                id: 10,
+                question: "Las dianas biológicas para fármacos a nivel molecular pueden tener distinta naturaleza química. ¿Cuáles son los principales tipos de dianas biológicas mencionadas, especialmente en el contexto de fármacos de pequeña molécula?",
+                options: [
+                    { id: "a", text: "Carbohidratos y vitaminas." },
+                    { id: "b", text: "Lípidos, ácidos nucleicos y proteínas (enzimas y receptores)." },
+                    { id: "c", text: "Sales minerales y gases." },
+                    { id: "d", text: "Agua y electrolitos." }
+                ],
+                correctAnswer: "b",
+                explanation: "Las dianas biológicas se definen como lugares específicos a nivel molecular donde un fármaco interactúa. Los lípidos, ácidos nucleicos y proteínas (enzimas y receptores de membrana) como los principales tipos de dianas biológicas."
+            },
+            // Pregunta 11
+            {
+                id: 11,
+                question: "En el metabolismo de Fase I, ¿cuál es el tipo de reacción más común catalizada principalmente por las enzimas de la familia Citocromo P-450 (CYP)?",
+                options: [
+                    { id: "a", text: "Glucuronidación." },
+                    { id: "b", text: "Conjugación con sulfato." },
+                    { id: "c", text: "Acetilación." },
+                    { id: "d", text: "Oxidación." }
+                ],
+                correctAnswer: "d",
+                explanation: "La oxidación es el tipo de reacción más común en la Fase I del metabolismo, y es catalizada por sistemas enzimáticos como las oxidasas de función mixta, con la familia Citocromo P-450 (CYP) como catalizador esencial."
+            },
+            // Pregunta 12
+            {
+                id: 12,
+                question: "El mecanismo de acción principal del 5-Fluorouracilo (5-FU) como fármaco antitumoral implica su interacción con la biosíntesis de nucleótidos, específicamente inhibiendo:",
+                options: [
+                    { id: "a", text: "Timidilato sintetasa." },
+                    { id: "b", text: "ADN polimerasa." },
+                    { id: "c", text: "ARN polimerasa." },
+                    { id: "d", text: "Dihidrofolato reductasa (DHFR)." }
+                ],
+                correctAnswer: "a",
+                explanation: "El mecanismo principal del 5-Fluorouracilo es la inhibición de la timidilato sintetasa, interfiriendo con la síntesis de pirimidinas necesarias para el ADN."
+            },
+            // Pregunta 13
+            {
+                id: 13,
+                question: "Los antibióticos betalactámicos, como las penicilinas y cefalosporinas, ejercen su efecto bactericida al inhibir una etapa crucial en la síntesis de la pared celular bacteriana. ¿Cuál es la diana enzimática principal de estos antibióticos?",
+                options: [
+                    { id: "a", text: "ADN girasa." },
+                    { id: "b", text: "Transpeptidasas (Proteínas Fijadoras de Penicilina - PBP)." },
+                    { id: "c", text: "Ribosomas (unidad 50S)." },
+                    { id: "d", text: "Membrana celular (permeabilidad)." }
+                ],
+                correctAnswer: "b",
+                explanation: "Los antibióticos betalactámicos atacan la pared bacteriana inhibiendo las transpeptidasas, también conocidas como Proteínas Fijadoras de Penicilina (PBP)."
+            },
+            // Pregunta 14
+            {
+                id: 14,
+                question: "Para predecir el perfil de absorción oral de una molécula en el descubrimiento de fármacos, a menudo se aplican criterios como la Regla de los 5 de Lipinski. ¿Cuál de los siguientes NO es uno de los parámetros considerados en esta regla?",
+                options: [
+                    { id: "a", text: "Peso Molecular < 500." },
+                    { id: "b", text: "Grupos dadores de enlaces de H < 5." },
+                    { id: "c", text: "Velocidad de disolución en agua." },
+                    { id: "d", text: "Grupos aceptores de enlaces de H < 10." }
+                ],
+                correctAnswer: "c",
+                explanation: "La Regla de Lipinski considera el peso molecular, la lipofilia (log P), el número de dadores de enlaces de H y el número de aceptores de enlaces de H para predecir la absorción oral. La velocidad de disolución no es uno de sus parámetros directos."
+            },
+            // Pregunta 15
+            {
+                id: 15,
+                question: "En la síntesis general de sulfonamidas, una etapa clave implica la reacción del grupo amina de una amina heterocíclica o aromática con:",
+                options: [
+                    { id: "a", text: "p-acetamidobencenosulfonil cloruro." },
+                    { id: "b", text: "Ácido sulfúrico concentrado." },
+                    { id: "c", text: "Cloruro de sulfurilo." },
+                    { id: "d", text: "Sulfanilamida." }
+                ],
+                correctAnswer: "a",
+                explanation: "La síntesis general de sulfonamidas puede implicar la condensación de una amina heterocíclica con p-acetamidobencenosulfonil cloruro, seguido de desprotección."
+            },
+            // Pregunta 16
+            {
+                id: 16,
+                question: "Una estrategia común para el diseño de pequeñas moléculas inhibidoras de quinasas se basa en:",
+                options: [
+                    { id: "a", text: "Aumentar el tamaño de la molécula para bloquear físicamente el sitio activo." },
+                    { id: "b", text: "Mimetizar la estructura de las bases nitrogenadas del ADN." },
+                    { id: "c", text: "Formar enlaces covalentes irreversibles con residuos de cisteína." },
+                    { id: "d", text: "Competir con la molécula de ATP por su sitio de unión en la quinasa." }
+                ],
+                correctAnswer: "d",
+                explanation: "La estrategia principal para el diseño de pequeñas moléculas inhibidoras de quinasas es competir con el ATP endógeno por su sitio de unión en la enzima."
+            },
+            // Pregunta 17
+            {
+                id: 17,
+                question: "Además de las enzimas, ¿cuáles son los otros dos principales tipos de dianas biológicas a nivel molecular donde interactúan los fármacos de pequeña molécula, según se menciona en los apuntes?",
+                options: [
+                    { id: "a", text: "Lípidos y ácidos nucleicos." },
+                    { id: "b", text: "Carbohidratos y vitaminas." },
+                    { id: "c", text: "Gases y sales minerales." },
+                    { id: "d", text: "Glucoproteínas y polisacáridos." }
+                ],
+                correctAnswer: "a",
+                explanation: "Las dianas biológicas principales para fármacos se definen como lípidos, ácidos nucleicos y proteínas (enzimas y receptores)."
+            },
+            // Pregunta 18
+            {
+                id: 18,
+                question: "Al estudiar la relación cuantitativa estructura-actividad (QSAR), Corwin Hansch propuso la parametrización de los efectos de los sustituyentes mediante descriptores numéricos. ¿Cuál de los siguientes NO es un tipo fundamental de parámetro propuesto por Hansch?",
+                options: [
+                    { id: "a", text: "Lipofilia (π)." },
+                    { id: "b", text: "Solubilidad en agua (S)." },
+                    { id: "c", text: "Efectos electrónicos (σ)." },
+                    { id: "d", text: "Efectos estéricos (Es)." }
+                ],
+                correctAnswer: "b",
+                explanation: "Los parámetros fundamentales propuestos por Hansch para describir los efectos de los sustituyentes en QSAR son π (lipofilia), σ (efectos electrónicos) y Es (efectos estéricos). La solubilidad en agua no es un parámetro directo fundamental en su ecuación lineal, aunque relacionada con la lipofilia."
+            },
+            // Pregunta 19
+            {
+                id: 19,
+                question: "El índice eudísmico es un parámetro farmacológico utilizado para expresar la relación en actividad biológica entre:",
+                options: [
+                    { id: "a", text: "Un profármaco y su forma activa." },
+                    { id: "b", text: "Dos bioisósteros." },
+                    { id: "c", text: "Dos enantiómeros." },
+                    { id: "d", text: "Dos fármacos con distinta estructura química." }
+                ],
+                correctAnswer: "c",
+                explanation: "El índice eudísmico expresa la relación entre la actividad del eutómero (enantiómero más activo) y el distómero (enantiómero menos activo)."
+            },
+            // Pregunta 20
+            {
+                id: 20,
+                question: "Los agentes alquilantes tipo aziridina, como el Tiotepa, ejercen su toxicidad y efecto antitumoral principalmente mediante un mecanismo de:",
+                options: [
+                    { id: "a", text: "Inhibición de la síntesis de proteínas en el ribosoma." },
+                    { id: "b", text: "Alquilación y potencial entrecruzamiento del ADN a través de la apertura de su anillo tensionado." },
+                    { id: "c", text: "Bloqueo específico de receptores de membrana ligados a proteínas G." },
+                    { id: "d", text: "Inhibición de enzimas clave en rutas metabólicas." }
+                ],
+                correctAnswer: "b",
+                explanation: "Los agentes alquilantes con anillos de aziridina, como Tiotepa, contienen anillos tensionados que son susceptibles al ataque nucleofílico. Este ataque abre el anillo y alquila la diana biológica, que es principalmente el ADN, pudiendo causar entrecruzamientos."
+            },
+            // Pregunta 21
+            {
+                id: 21,
+                question: "Un fármaco o principio activo se define como:",
+                options: [
+                    { id: "a", text: "Sustancia biológicamente activa, químicamente pura y con acción terapéutica." },
+                    { id: "b", text: "Materia prima de origen natural con actividad farmacológica." },
+                    { id: "c", text: "Mezcla de uno o más fármacos con excipientes en forma galénica." },
+                    { id: "d", text: "Título que otorga derecho exclusivo a fabricar y comercializar un objeto." }
+                ],
+                correctAnswer: "a",
+                explanation: "Un fármaco o principio activo es la sustancia responsable de la actividad biológica y el efecto terapéutico. Las otras opciones describen una materia prima, una forma farmacéutica o una patente."
+            },
+            // Pregunta 22
+            {
+                id: 22,
+                question: "Al nombrar sistemas heterocíclicos condensados, para elegir el heterociclo base se prioriza rigurosamente aquel que contenga:",
+                options: [
+                    { id: "a", text: "El mayor número de ciclos en el sistema." },
+                    { id: "b", text: "Nitrógeno." },
+                    { id: "c", text: "El mayor número de heteroátomos." },
+                    { id: "d", text: "El mayor tamaño de anillo." }
+                ],
+                correctAnswer: "b",
+                explanation: "Según las reglas de nomenclatura IUPAC para heterociclos condensados, la presencia de nitrógeno suele ser el criterio de mayor prioridad para elegir el heterociclo base."
+            },
+            // Pregunta 23
+            {
+                id: 23,
+                question: "El descubrimiento de la penicilina por Alexander Fleming en 1928 es un ejemplo clásico de qué método de búsqueda de prototipos:",
+                options: [
+                    { id: "a", text: "Diseño racional basado en la diana terapéutica." },
+                    { id: "b", text: "Cribado de alto rendimiento (high troughput screening)." },
+                    { id: "c", text: "Descubrimiento casual de la actividad (serendipia)." },
+                    { id: "d", text: "Modificación y mejora de fármacos existentes." }
+                ],
+                correctAnswer: "c",
+                explanation: "El descubrimiento de la penicilina por Alexander Fleming fue un hallazgo accidental a partir de la observación de una contaminación, lo que lo convierte en un ejemplo clásico de serendipia."
+            },
+            // Pregunta 24
+            {
+                id: 24,
+                question: "En el contexto de la bioisostería, ¿cuál de los siguientes NO es un parámetro significativo a considerar al intercambiar grupos?",
+                options: [
+                    { id: "a", text: "Color y olor del compuesto." },
+                    { id: "b", text: "Tamaño o volumen de los grupos." },
+                    { id: "c", text: "Distribución electrónica." },
+                    { id: "d", text: "Capacidad de formación de enlaces de hidrógeno." }
+                ],
+                correctAnswer: "a",
+                explanation: "Los parámetros importantes en bioisostería para mantener una actividad biológica análoga incluyen el tamaño/volumen, la distribución electrónica y la capacidad de formar enlaces de hidrógeno. El color y olor no son parámetros estructurales o fisicoquímicos relevantes para la interacción con dianas biológicas."
+            },
+            // Pregunta 25
+            {
+                id: 25,
+                question: "¿Qué tipo de interacción se establece predominantemente entre un grupo carboxilato (-COO⁻) de un fármaco y la cadena lateral de una lisina (que a pH fisiológico está protonada, -NH₃⁺) en el receptor?",
+                options: [
+                    { id: "a", text: "Enlace de hidrógeno." },
+                    { id: "b", text: "Enlace iónico." },
+                    { id: "c", text: "Interacción hidrofóbica." },
+                    { id: "d", text: "Enlace covalente." }
+                ],
+                correctAnswer: "b",
+                explanation: "Un grupo carboxilato (-COO⁻) es una carga negativa y una lisina protonada (-NH₃⁺) es una carga positiva. La interacción entre cargas opuestas es un enlace iónico."
+            },
+            // Pregunta 26
+            {
+                id: 26,
+                question: "Según la Regla de los 5 de Lipinski, una molécula con un buen perfil de absorción oral generalmente cumple los siguientes criterios, EXCEPTO:",
+                options: [
+                    { id: "a", text: "Peso Molecular < 500." },
+                    { id: "b", text: "Grupos dadores de enlaces de H < 5." },
+                    { id: "c", text: "clog P > 5." },
+                    { id: "d", text: "Grupos aceptores de enlaces de H < 10." }
+                ],
+                correctAnswer: "c",
+                explanation: "La Regla de los 5 de Lipinski establece que para una buena absorción oral, el clog P (coeficiente de partición calculado) debe ser menor o igual a 5, no mayor."
+            },
+            // Pregunta 27
+            {
+                id: 27,
+                question: "En el análisis QSAR de Hansch, el parámetro sigma (σ) se utiliza para cuantificar:",
+                options: [
+                    { id: "a", text: "El impedimento estérico de un sustituyente." },
+                    { id: "b", text: "La lipofilia del sustituyente." },
+                    { id: "c", text: "Los efectos electrónicos de un sustituyente." },
+                    { id: "d", text: "La actividad intrínseca del fármaco." }
+                ],
+                correctAnswer: "c",
+                explanation: "El parámetro sigma (σ) en la ecuación de Hansch cuantifica los efectos electrónicos (inductivos y resonantes) de los sustituyentes."
+            },
+            // Pregunta 28
+            {
+                id: 28,
+                question: "La obtención de penicilinas semisintéticas como la ampicilina o la amoxicilina se basa en la hidrólisis selectiva de la cadena lateral de penicilinas naturales para obtener un intermediario clave, que es:",
+                options: [
+                    { id: "a", text: "Ácido 6-Aminopenicilánico (6-APA)." },
+                    { id: "b", text: "Ácido 7-Aminoacéfalosporánico (7-ACA)." },
+                    { id: "c", text: "Ácido peniciloico." },
+                    { id: "d", text: "Ácido clavulánico." }
+                ],
+                correctAnswer: "a",
+                explanation: "El ácido 6-aminopenicilánico (6-APA) es el precursor clave obtenido por hidrólisis de la cadena lateral de las penicilinas naturales, al cual se le pueden añadir diferentes cadenas laterales para obtener penicilinas semisintéticas."
+            },
+            // Pregunta 29
+            {
+                id: 29,
+                question: "Las sulfonamidas ejercen su acción antibacteriana principalmente mediante:",
+                options: [
+                    { id: "a", text: "Inhibición de la timidilato sintetasa." },
+                    { id: "b", text: "Actuando como antimetabolitos del PABA." },
+                    { id: "c", text: "Inhibición de la dihidrofolato reductasa (DHFR)." },
+                    { id: "d", text: "Formación de un ion aziridinio que alquila el ADN." }
+                ],
+                correctAnswer: "b",
+                explanation: "Las sulfonamidas son antimetabolitos que compiten con el ácido para-aminobenzoico (PABA) en la ruta de síntesis de folato bacteriano, esencial para su crecimiento."
+            },
+            // Pregunta 30
+            {
+                id: 30,
+                question: "El 5-Fluorouracilo (5-FU) es un fármaco antitumoral cuyo mecanismo principal de acción implica la inhibición de qué enzima clave en la síntesis de pirimidinas:",
+                options: [
+                    { id: "a", text: "Dihidrofolato reductasa (DHFR)." },
+                    { id: "b", text: "Tirosina Quinasa." },
+                    { id: "c", text: "Timidilato sintetasa." },
+                    { id: "d", text: "ADN polimerasa." }
+                ],
+                correctAnswer: "c",
+                explanation: "El 5-Fluorouracilo es un análogo de pirimidina que actúa como un falso sustrato, inhibiendo irreversiblemente la timidilato sintetasa, una enzima crucial para la síntesis de dTMP y, por lo tanto, de ADN."
+            },
+            // Pregunta 31
+            {
+                id: 31,
+                question: "Una patente farmacéutica otorga el derecho exclusivo a fabricar y comercializar el objeto de la patente durante su vigencia, pero lo que se patenta debe cumplir dos requisitos principales:",
+                options: [
+                    { id: "a", text: "Ser de origen natural y tener actividad terapéutica conocida." },
+                    { id: "b", text: "Haber superado la Fase III de ensayos clínicos y tener bajo coste de producción." },
+                    { id: "c", text: "Haber sido descubierto mediante cribado de alto rendimiento y ser poco tóxico." },
+                    { id: "d", text: "Ser novedoso y tener actividad inventiva." }
+                ],
+                correctAnswer: "d",
+                explanation: "Los requisitos fundamentales para patentar una invención, incluyendo un fármaco, son que sea novedosa (no publicada previamente) y tenga actividad inventiva (no obvia para un experto en la materia)."
+            },
+            // Pregunta 32
+            {
+                id: 32,
+                question: "Según las reglas de nomenclatura de sistemas heterocíclicos condensados, al elegir el heterociclo base, la primera prioridad rigurosa es que contenga:",
+                options: [
+                    { id: "a", text: "El mayor número de heteroátomos." },
+                    { id: "b", text: "Nitrógeno." },
+                    { id: "c", text: "Oxígeno, si no hay Nitrógeno." },
+                    { id: "d", text: "El mayor tamaño de anillo." }
+                ],
+                correctAnswer: "b",
+                explanation: "En la nomenclatura de heterociclos condensados, el nitrógeno (N) tiene la máxima prioridad entre los heteroátomos comunes (O, S, N) para determinar el heterociclo base."
+            },
+            // Pregunta 33
+            {
+                id: 33,
+                question: "El descubrimiento del cloranfenicol, aislado del Streptomyces venezuelae, se menciona como un ejemplo de qué procedimiento de búsqueda de prototipos:",
+                options: [
+                    { id: "a", text: "Diseño racional basado en la diana terapéutica." },
+                    { id: "b", text: "Modificación y mejora de fármacos existentes ('fármacos gemelos')." },
+                    { id: "c", text: "Ensayos al azar (random screening)." },
+                    { id: "d", text: "Explotación de información biológica (observaciones clínicas)." }
+                ],
+                correctAnswer: "c",
+                explanation: "El aislamiento de compuestos bioactivos de fuentes naturales, como el Cloranfenicol de un microorganismo, a menudo se realiza a través de ensayos al azar (screening) de una gran variedad de muestras."
+            },
+            // Pregunta 34
+            {
+                id: 34,
+                question: "En bioisostería, los grupos -H y -F se consideran a veces bioisósteros debido principalmente a la similitud en su:",
+                options: [
+                    { id: "a", text: "Acidez." },
+                    { id: "b", text: "Capacidad de formar enlaces de hidrógeno." },
+                    { id: "c", text: "Distribución electrónica." },
+                    { id: "d", text: "Tamaño o volumen de los grupos." }
+                ],
+                correctAnswer: "d",
+                explanation: "El hidrógeno y el flúor tienen radios atómicos muy similares, lo que los convierte en bioisósteros clásicos en términos de tamaño, a pesar de sus diferentes propiedades electrónicas."
+            },
+            // Pregunta 35
+            {
+                id: 35,
+                question: "En el contexto de la interacción fármaco-receptor, ¿qué tipo de enlace se forma cuando un grupo funcional del fármaco transfiere un grupo alquilo o similar a una molécula nucleofílica del receptor?",
+                options: [
+                    { id: "a", text: "Enlace de hidrógeno." },
+                    { id: "b", text: "Interacción hidrofóbica." },
+                    { id: "c", text: "Enlace covalente." },
+                    { id: "d", text: "Enlace iónico." }
+                ],
+                correctAnswer: "c",
+                explanation: "La transferencia de un grupo alquilo o la formación de un enlace permanente entre el fármaco y el receptor es característica de un enlace covalente, que es el más fuerte y a menudo irreversible."
+            },
+            // Pregunta 36
+            {
+                id: 36,
+                question: "Para un fármaco con buen perfil de absorción oral, la Regla de los 5 de Lipinski indica que el logaritmo del coeficiente de partición calculado (clog P) debería ser:",
+                options: [
+                    { id: "a", text: "Mayor que 10." },
+                    { id: "b", text: "Mayor que 5." },
+                    { id: "c", text: "Aproximadamente 5." },
+                    { id: "d", text: "Menor que 5." }
+                ],
+                correctAnswer: "d",
+                explanation: "La Regla de los 5 de Lipinski establece que el clog P debe ser menor o igual a 5 para predecir una buena absorción oral."
+            },
+            // Pregunta 37
+            {
+                id: 37,
+                question: "En el análisis QSAR de Hansch, el parámetro pi (π) se utiliza para cuantificar:",
+                options: [
+                    { id: "a", text: "El impedimento estérico de un sustituyente." },
+                    { id: "b", text: "Los efectos electrónicos de un sustituyente." },
+                    { id: "c", text: "La acidez del sustituyente." },
+                    { id: "d", text: "La lipofilia del sustituyente." }
+                ],
+                correctAnswer: "d",
+                explanation: "El parámetro pi (π) en la ecuación de Hansch es un descriptor de la lipofilia o hidrofobicidad de un sustituyente."
+            },
+            // Pregunta 38
+            {
+                id: 38,
+                question: "Las cefalosporinas, otro grupo importante de antibióticos β-lactámicos, se diferencian de las penicilinas principalmente en que poseen un anillo fusionado de:",
+                options: [
+                    { id: "a", text: "Cinco miembros (tiazolidina)." },
+                    { id: "b", text: "Siete miembros (dihidroazepina)." },
+                    { id: "c", text: "Cuatro miembros (azetidina)." },
+                    { id: "d", text: "Seis miembros (dihidrotiazina)." }
+                ],
+                correctAnswer: "d",
+                explanation: "Las penicilinas tienen un anillo de tiazolidina de 5 miembros fusionado al β-lactámico, mientras que las cefalosporinas tienen un anillo de dihidrotiazina de 6 miembros."
+            },
+            // Pregunta 39
+            {
+                id: 39,
+                question: "El Prontosil, un colorante rojo con actividad antibacteriana in vivo, fue posteriormente descubierto como un:",
+                options: [
+                    { id: "a", text: "Agente alquilante que daña el ADN bacteriano." },
+                    { id: "b", text: "Inhibidor de la dihidrofolato reductasa bacteriana." },
+                    { id: "c", text: "Profármaco que se metaboliza a Sulfanilamida." },
+                    { id: "d", text: "Inhibidor de la síntesis de la pared celular." }
+                ],
+                correctAnswer: "c",
+                explanation: "El Prontosil fue el primer fármaco descubierto con actividad antibacteriana sistémica. Más tarde se descubrió que era un profármaco que se metabolizaba en el organismo para liberar la sulfanilamida, la verdadera sustancia activa."
+            },
+            // Pregunta 40
+            {
+                id: 40,
+                question: "El Metotrexato (MTX) actúa principalmente como antagonista del ácido fólico, ejerciendo su acción antitumoral al inhibir la enzima:",
+                options: [
+                    { id: "a", text: "Timidilato sintetasa." },
+                    { id: "b", text: "Topoisomerasa bacteriana." },
+                    { id: "c", text: "ADN Polimerasa." },
+                    { id: "d", text: "Dihidrofolato reductasa (DHFR)." }
+                ],
+                correctAnswer: "d",
+                explanation: "El Metotrexato es un análogo estructural del ácido fólico que inhibe la dihidrofolato reductasa (DHFR), una enzima esencial para la síntesis de nucleótidos y la replicación celular."
+            },
+             // Pregunta 41
+            {
+                id: 41,
+                question: "Según la nomenclatura IUPAC de compuestos heterocíclicos, ¿qué prefijos se utilizan comúnmente para indicar la presencia de Oxígeno (O), Azufre (S) y Nitrógeno (N) como heteroátomos en un ciclo, respectivamente?",
+                options: [
+                    { id: "a", text: "Oxa-, Tia-, Aza-." },
+                    { id: "b", text: "Aza-, Tia-, Oxa-." },
+                    { id: "c", text: "Tia-, Oxa-, Aza-." },
+                    { id: "d", text: "Oxa-, Aza-, Tia-." }
+                ],
+                correctAnswer: "a",
+                explanation: "Los prefijos IUPAC para heteroátomos son oxa- para oxígeno, tia- para azufre y aza- para nitrógeno."
+            },
+            // Pregunta 42
+            {
+                id: 42,
+                question: "En el contexto del descubrimiento de fármacos, ¿cómo se define un \"prototipo\" o \"cabeza de serie\"?",
+                options: [
+                    { id: "a", text: "El fármaco final comercializado tras optimización." },
+                    { id: "b", text: "El compuesto que sirve como punto de partida, dando la primera pista de actividad biológica, a partir del cual se desarrollan nuevos fármacos." },
+                    { id: "c", text: "Un compuesto inactivo que se convierte en fármaco activo en el organismo." },
+                    { id: "d", text: "Una molécula optimizada para tener la mejor actividad y seguridad posibles." }
+                ],
+                correctAnswer: "b",
+                explanation: "El prototipo o cabeza de serie es el primer compuesto que muestra una actividad biológica interesante y sirve como base para la optimización y el desarrollo de fármacos más potentes y selectivos."
+            },
+            // Pregunta 43
+            {
+                id: 43,
+                question: "En el análisis QSAR (Relación Estructura-Actividad Cuantitativa), ¿qué propiedad fisicoquímica pretende cuantificar el parámetro sigma (σ) propuesto por Hansch?",
+                options: [
+                    { id: "a", text: "Los efectos estéricos de un sustituyente." },
+                    { id: "b", text: "La lipofilia o hidrofobicidad de un sustituyente." },
+                    { id: "c", text: "Los efectos electrónicos de un sustituyente." },
+                    { id: "d", text: "El volumen molecular de la molécula completa." }
+                ],
+                correctAnswer: "c",
+                explanation: "El parámetro sigma (σ) de Hansch cuantifica la capacidad de un sustituyente para atraer o donar densidad electrónica, afectando la reactividad o las interacciones del fármaco."
+            },
+            // Pregunta 44
+            {
+                id: 44,
+                question: "En la interacción de un fármaco con su diana biológica (proteína, por ejemplo), los enlaces iónicos se establecen principalmente entre grupos cargados. ¿Qué tipos de cadenas laterales de aminoácidos en la proteína son fuentes comunes de cargas que participan en estos enlaces?",
+                options: [
+                    { id: "a", text: "Aminoácidos con cadenas laterales alifáticas (ej. Alanina, Leucina)." },
+                    { id: "b", text: "Aminoácidos con cadenas laterales hidroxiladas (ej. Serina, Treonina)." },
+                    { id: "c", text: "Aminoácidos con cadenas laterales apolares (ej. Fenilalanina, Triptófano)." },
+                    { id: "d", text: "Aminoácidos con cadenas laterales ácidas desprotonadas (Aspartato, Glutamato) y básicas protonadas (Lisina, Arginina, Histidina)." }
+                ],
+                correctAnswer: "d",
+                explanation: "Los enlaces iónicos se forman entre grupos con carga opuesta. En las proteínas, las cadenas laterales de los aminoácidos ácidos (Aspartato, Glutamato) que pueden estar desprotonadas (-COO⁻) y los aminoácidos básicos (Lisina, Arginina, Histidina) que pueden estar protonados (-NH₃⁺) son los principales participantes."
+            },
+            // Pregunta 45
+            {
+                id: 45,
+                question: "Durante la Fase I del metabolismo de fármacos, uno de los sistemas enzimáticos clave responsable de catalizar las reacciones de oxidación es:",
+                options: [
+                    { id: "a", text: "La familia de enzimas Citocromo P-450 (CYP)." },
+                    { id: "b", text: "Las transferasas." },
+                    { id: "c", text: "Las hidrolasas." },
+                    { id: "d", text: "Las reductasas de grupos nitro." }
+                ],
+                correctAnswer: "a",
+                explanation: "La familia de enzimas Citocromo P-450 (CYP) es el sistema enzimático más importante y versátil en el metabolismo de Fase I, catalizando la mayoría de las reacciones de oxidación de fármacos."
+            },
+            // Pregunta 46
+            {
+                id: 46,
+                question: "Un \"profármaco\" se define como un derivado inactivo (o menos activo) de un fármaco, que requiere biotransformación in vivo para liberar la entidad activa. ¿Cuál es uno de los objetivos farmacocinéticos principales al diseñar un profármaco?",
+                options: [
+                    { id: "a", text: "Aumentar su toxicidad selectiva." },
+                    { id: "b", text: "Mejorar su absorción a través de membranas biológicas (ej. absorción oral o tópica)." },
+                    { id: "c", text: "Disminuir su vida media en el organismo." },
+                    { id: "d", text: "Inhibir su interacción con la diana terapéutica." }
+                ],
+                correctAnswer: "b",
+                explanation: "Los profármacos se diseñan frecuentemente para superar barreras farmacocinéticas, como la baja absorción oral, la mala solubilidad, la inestabilidad o la escasa penetración en tejidos específicos."
+            },
+            // Pregunta 47
+            {
+                id: 47,
+                question: "Las sulfonamidas, pioneras de la quimioterapia antibacteriana, ejercen su acción principal al actuar como antimetabolitos. Esto significa que interfieren con la síntesis de una sustancia esencial para las bacterias al competir con:",
+                options: [
+                    { id: "a", text: "Ácido fólico." },
+                    { id: "b", text: "Ácido acetilsalicílico." },
+                    { id: "c", text: "Glutatión." },
+                    { id: "d", text: "Ácido para-aminobenzoico (PABA)." }
+                ],
+                correctAnswer: "d",
+                explanation: "Las sulfonamidas son análogos estructurales del PABA y compiten con él por la dihidropteroato sintetasa, inhibiendo la síntesis bacteriana de ácido fólico, que es esencial para su crecimiento."
+            },
+            // Pregunta 48
+            {
+                id: 48,
+                question: "La \"Homología\" es una aproximación dentro de la modificación estructural de prototipos que implica la variación sistemática de la longitud de una cadena alifática, generalmente introduciendo o eliminando grupos metileno (-CH₂-). ¿Cuál es el objetivo principal de estudiar series homólogas?",
+                options: [
+                    { id: "a", text: "Evaluar el impacto de la introducción de sustituyentes polares." },
+                    { id: "b", text: "Modificar la distribución electrónica del anillo aromático." },
+                    { id: "c", text: "Estudiar la influencia de la distancia entre grupos funcionales esenciales para la unión al receptor y cómo afecta la actividad." },
+                    { id: "d", text: "Reemplazar un átomo por otro con propiedades similares (isostería)." }
+                ],
+                correctAnswer: "c",
+                explanation: "Las series homólogas permiten estudiar cómo la longitud de una cadena y, por tanto, la distancia entre grupos funcionales, afecta la interacción con la diana y la actividad biológica."
+            },
+            // Pregunta 49
+            {
+                id: 49,
+                question: "El \"Periodo científico\" en la historia de la Química Farmacéutica (aproximadamente del siglo XIX hasta 1960) se caracteriza por:",
+                options: [
+                    { id: "a", text: "El uso exclusivo de productos naturales como venenos." },
+                    { id: "b", text: "El desarrollo de la Química Orgánica y el uso de productos de síntesis, con las ciencias volviéndose experimentales." },
+                    { id: "c", text: "El descubrimiento de la estructura del ADN." },
+                    { id: "d", text: "El auge del diseño racional de fármacos basado en la estructura tridimensional de las dianas." }
+                ],
+                correctAnswer: "b",
+                explanation: "El periodo científico se caracterizó por la maduración de la química orgánica, permitiendo la síntesis de nuevos compuestos, y el desarrollo de la farmacología como ciencia experimental, sentando las bases para el diseño de fármacos modernos."
+            },
+            // Pregunta 50
+            {
+                id: 50,
+                question: "Aunque las penicilinas y cefalosporinas tienen el mismo mecanismo de acción (inhibición de las transpeptidasas), presentan diferencias estructurales clave. Una de ellas es el tamaño del anillo fusionado al β-lactámico, siendo este anillo en las cefalosporinas de:",
+                options: [
+                    { id: "a", text: "5 miembros (anillo de tiazolidina)." },
+                    { id: "b", text: "7 miembros (dihidroazepina)." },
+                    { id: "c", text: "6 miembros (anillo de dihidrotiazina)." },
+                    { id: "d", text: "4 miembros (anillo de azetidina)." }
+                ],
+                correctAnswer: "c",
+                explanation: "Las penicilinas poseen un anillo tiazolidínico de 5 miembros fusionado al β-lactámico, mientras que las cefalosporinas tienen un anillo de dihidrotiazina de 6 miembros."
+            },
+            // Pregunta 51
+            {
+                id: 51,
+                question: "Según la estructura del examen final descrita, los ejercicios y problemas se centrarán especialmente en los temas:",
+                options: [
+                    { id: "a", text: "1, 2, 3 y 4." },
+                    { id: "b", text: "5, 7, 8 y 9." },
+                    { id: "c", text: "7, 9, 10 y 11." },
+                    { id: "d", text: "6, 8, 9 y 10." }
+                ],
+                correctAnswer: "d",
+                explanation: "Esta pregunta es de carácter informativo sobre la estructura del examen, no un concepto de química farmacéutica. La respuesta correcta está indicada en el material de origen."
+            },
+            // Pregunta 52
+            {
+                id: 52,
+                question: "En la segunda parte del examen (síntesis, mecanismos de acción, rutas metabólicas), la calificación de las preguntas dependerá directamente de:",
+                options: [
+                    { id: "a", text: "La calidad y presencia de las estructuras químicas, mecanismos bien explicados y desarrollo completo." },
+                    { id: "b", text: "La extensión de la descripción teórica." },
+                    { id: "c", text: "La originalidad de las estructuras químicas propuestas." },
+                    { id: "d", text: "La capacidad para memorizar nombres de fármacos." }
+                ],
+                correctAnswer: "a",
+                explanation: "Esta pregunta es de carácter informativo sobre la estructura del examen, no un concepto de química farmacéutica. La respuesta correcta está indicada en el material de origen."
+            },
+            // Pregunta 53
+            {
+                id: 53,
+                question: "Según las reglas para la elección del heterociclo base en sistemas heterocíclicos condensados, el primer criterio de prioridad es aquel que tenga:",
+                options: [
+                    { id: "a", text: "Mayor número de ciclos en el sistema." },
+                    { id: "b", text: "Nitrógeno (N)." },
+                    { id: "c", text: "Mayor tamaño de anillo." },
+                    { id: "d", text: "Mayor número de heteroátomos." }
+                ],
+                correctAnswer: "b",
+                explanation: "En la nomenclatura de heterociclos fusionados, el heterociclo que contiene nitrógeno (si lo hay) es generalmente la elección prioritaria para el heterociclo base."
+            },
+            // Pregunta 54
+            {
+                id: 54,
+                question: "En la numeración de sistemas heterocíclicos condensados, se comienza a numerar en el sentido de las agujas del reloj, empezando por el átomo no participante en la condensación que quede:",
+                options: [
+                    { id: "a", text: "Más abajo y más a la izquierda." },
+                    { id: "b", text: "Más abajo y más a la derecha." },
+                    { id: "c", text: "Más arriba y más a la derecha." },
+                    { id: "d", text: "Más arriba y más a la izquierda." }
+                ],
+                correctAnswer: "c",
+                explanation: "Esta es una regla estándar de la IUPAC para la numeración de sistemas policíclicos condensados, buscando la posición más alta y a la derecha para el inicio."
+            },
+            // Pregunta 55
+            {
+                id: 55,
+                question: "El descubrimiento del antibiótico Cloranfenicol, aislado del Streptomyces venezuelae, se menciona como un ejemplo histórico del procedimiento de búsqueda de prototipos conocido como:",
+                options: [
+                    { id: "a", text: "Modificación y mejora de fármacos existentes ('fármacos gemelos')." },
+                    { id: "b", text: "Diseño racional basado en la diana terapéutica." },
+                    { id: "c", text: "Explotación de información biológica (observaciones clínicas)." },
+                    { id: "d", text: "Ensayos al azar (random screening)." }
+                ],
+                correctAnswer: "d",
+                explanation: "El cribado de productos naturales (como extractos microbianos en este caso) sin un conocimiento previo de la diana, es un ejemplo de ensayos al azar o random screening."
+            },
+            // Pregunta 56
+            {
+                id: 56,
+                question: "En la aproximación modulativa de optimización de prototipos, la \"vinilogía\" (introducción o eliminación de grupos vinilo) sirve para:",
+                options: [
+                    { id: "a", text: "Demostrar si los efectos resonantes son importantes para la actividad biológica." },
+                    { id: "b", text: "Modificar la lipofilia de la molécula." },
+                    { id: "c", text: "Introducir nuevos heteroátomos en el ciclo." },
+                    { id: "d", text: "Aumentar el tamaño de la cadena alifática." }
+                ],
+                correctAnswer: "a",
+                explanation: "La vinilogía (la adición o eliminación de una unidad -CH=CH-) permite variar la distancia entre grupos funcionales y, crucialmente, el grado de conjugación y los efectos resonantes, lo que puede impactar significativamente la actividad biológica."
+            },
+            // Pregunta 57
+            {
+                id: 57,
+                question: "Considerando el ejemplo del Busulfano y sus análogos rígidos, se ilustra el concepto de que la actividad antineoplásica de estos fármacos alquilantes está relacionada con:",
+                options: [
+                    { id: "a", text: "La capacidad de hidrolizarse fácilmente en el organismo." },
+                    { id: "b", text: "La capacidad de formar derivados cíclicos (ej. pirrolidínicos) mediante bis-alquilación de grupos nucleofílicos en la diana biológica, lo cual depende de la flexibilidad o rigidez de la estructura." },
+                    { id: "c", text: "La presencia de grupos hidroxilo libres." },
+                    { id: "d", text: "La interacción exclusiva con lípidos de membrana." }
+                ],
+                correctAnswer: "b",
+                explanation: "La actividad de los agentes alquilantes bifuncionales como el Busulfano está ligada a su capacidad de reaccionar con dos nucleófilos, típicamente en el ADN, formando entrecruzamientos. Esta capacidad y la especificidad de los entrecruzamientos dependen en gran medida de la distancia y flexibilidad de los grupos reactivos."
+            },
+            // Pregunta 58
+            {
+                id: 58,
+                question: "Las Reglas de Lipinski surgieron como un buen criterio para predecir qué moléculas con acción farmacológica tendrían una buena:",
+                options: [
+                    { id: "a", text: "Toxicidad selectiva." },
+                    { id: "b", text: "Resistencia a la metabolización." },
+                    { id: "c", text: "Absorción oral." },
+                    { id: "d", text: "Interacción con la diana terapéutica." }
+                ],
+                correctAnswer: "c",
+                explanation: "Las Reglas de Lipinski se desarrollaron específicamente para predecir la probabilidad de que una molécula tenga una buena absorción oral en humanos."
+            },
+            // Pregunta 59
+            {
+                id: 59,
+                question: "Uno de los objetivos farmacocinéticos clave al diseñar un profármaco es:",
+                options: [
+                    { id: "a", text: "Disminuir su vida media plasmática." },
+                    { id: "b", text: "Aumentar su afinidad por proteínas plasmáticas." },
+                    { id: "c", text: "Reducir su volumen de distribución." },
+                    { id: "d", text: "Aumentar su absorción a través de membranas biológicas." }
+                ],
+                correctAnswer: "d",
+                explanation: "El diseño de profármacos a menudo busca mejorar la biodisponibilidad y la absorción de un fármaco a través de barreras biológicas (como la absorción oral o la penetración en tejidos específicos)."
+            },
+            // Pregunta 60
+            {
+                id: 60,
+                question: "Una estrategia común en el diseño de inhibidores de quinasas como fármacos antitumorales es:",
+                options: [
+                    { id: "a", text: "Actuar como agentes alquilantes del ADN." },
+                    { id: "b", text: "Diseñar moléculas que compitan con el ATP por su sitio de unión en la quinasa." },
+                    { id: "c", text: "Inhibir la síntesis de precursores de nucleótidos." },
+                    { id: "d", text: "Bloquear la adhesión celular." }
+                ],
+                correctAnswer: "b",
+                explanation: "La inhibición de quinasas mediante moléculas que compiten con el ATP por su sitio de unión es una estrategia fundamental y ampliamente utilizada en el diseño de fármacos oncológicos dirigidos."
+            },
+            // Nuevas preguntas añadidas aquí
+            {
+                id: 61,
+                question: "¿Cuál de las siguientes afirmaciones es la que más se aproxima a la descripción del metabolismo de fase II?",
+                options: [
+                    { id: "a", text: "Reacciones que añaden una molécula polar a un grupo funcional ya presente en un fármaco o en uno de sus metabolitos" },
+                    { id: "b", text: "Reacciones que se producen en el riego sanguíneo" },
+                    { id: "c", text: "Reacciones que añaden un grupo funcional polar a un fármaco" },
+                    { id: "d", text: "Reacciones que se producen en la pared intestinal." }
+                ],
+                correctAnswer: "a",
+                explanation: "La Fase II consiste en la conjugación, que es la unión covalente del fármaco o sus metabolitos a moléculas endógenas polares de alta polaridad. Esto crea especies altamente hidrosolubles para facilitar la eliminación."
+            },
+            {
+                id: 62,
+                question: "¿Qué representa el símbolo P en una ecuación QSAR?",
+                options: [
+                    { id: "a", text: "pH" },
+                    { id: "b", text: "Concentración plasmática" },
+                    { id: "c", text: "Coeficiente de partición" },
+                    { id: "d", text: "Profármaco" }
+                ],
+                correctAnswer: "c",
+                explanation: "En QSAR, P (o más comúnmente log P) representa el coeficiente de partición de un compuesto neutro entre una fase lipófila (como octanol) y una fase acuosa, y cuantifica la lipofilia de la molécula."
+            },
+            {
+                id: 63,
+                question: "¿Qué reacción cataliza una enzima β-lactamasa?",
+                options: [
+                    { id: "a", text: "La reacción final de reticulación para formar la pared celular bacteriana" },
+                    { id: "b", text: "La hidrólisis de la cadena lateral del acilo de las estructuras de la penicilina" },
+                    { id: "c", text: "La hidrólisis del anillo de cuatro miembros presente en las penicilinas" },
+                    { id: "d", text: "La biosíntesis de la estructura de la penicilina a partir de los aminoácidos valina y cisteína." }
+                ],
+                correctAnswer: "c",
+                explanation: "Las β-lactamasas bacterianas hidrolizan (rompen) el anillo β-lactámico, que es el anillo de cuatro miembros, causando resistencia al antibiótico. Su mecanismo implica la acilación inicial de la enzima por el β-lactámico del inhibidor, similar a la reacción con un antibiótico, pero conduciendo a la inactivación de la enzima."
+            },
+            {
+                id: 64,
+                question: "¿Cuál de los siguientes antibióticos es un macrólido?",
+                options: [
+                    { id: "a", text: "Cloranfenicol" },
+                    { id: "b", text: "Doxiciclina" },
+                    { id: "c", text: "Eritromicina" },
+                    { id: "d", text: "Estreptomicina" }
+                ],
+                correctAnswer: "c",
+                explanation: "Eritromicina como un ejemplo de los Macrólidos, un grupo de antibióticos que inhiben la síntesis proteica bacteriana. El Cloranfenicol y la Estreptomicina (un Aminoglucósido) son otros tipos de inhibidores de la síntesis proteica. Las tetraciclinas, como la Doxiciclina, también son otro grupo de antibióticos."
+            },
+            {
+                id: 65,
+                question: "¿Qué significa un valor negativo de σ para un sustituyente?",
+                options: [
+                    { id: "a", text: "Es donante de electrones" },
+                    { id: "b", text: "Es la retirada de electrones" },
+                    { id: "c", text: "Es neutral" },
+                    { id: "d", text: "Es hidrofóbico." }
+                ],
+                correctAnswer: "a",
+                explanation: "En el análisis QSAR de Hansch, el parámetro sigma (σ) se utiliza para cuantificar los efectos electrónicos de un sustituyente. Los grupos que son electrodadores (donantes de electrones) tienen un valor sigma menor que cero (negativo), mientras que los grupos electrón atrayentes tienen un valor sigma mayor que cero (positivo)."
+            },
+            {
+                id: 66,
+                question: "¿Cuál de las siguientes afirmaciones NO es VERDADERA?",
+                options: [
+                    { id: "a", text: "Las sulfonamidas se clasifican como agentes bacteriostáticos" },
+                    { id: "b", text: "Las penicilinas se clasifican como agentes bactericidas" },
+                    { id: "c", text: "Las bacterias tienen la proteína de transporte que permitiría el suministro de ácido fólico desde el exterior de la célula" },
+                    { id: "d", text: "Las sulfonamidas actúan como inhibidores enzimáticos competitivos y bloquean la biosíntesis del ácido tetrahidrofólico en las células bacterianas" }
+                ],
+                correctAnswer: "c",
+                explanation: "El PABA (ácido para-aminobenzoico) es esencial para las bacterias porque lo utilizan para la síntesis de ácido fólico, a diferencia de los humanos que lo obtienen de la dieta. Esto implica que las bacterias sintetizan su propio folato y no dependen de un suministro externo. Las sulfonamidas interfieren precisamente con esta ruta de síntesis interna. Las opciones a, b y d son consistentes con la información proporcionada, ya que las sulfonamidas tienen efecto bacteriostático, las penicilinas son bactericidas al causar la muerte celular, y las sulfonamidas son inhibidores competitivos de la dihidropteroato sintetasa (DHPS), bloqueando la síntesis de THF."
+            },
+            {
+                id: 67,
+                question: "¿Cuál de las siguientes afirmaciones NO es VERDADERA?",
+                options: [
+                    { id: "a", text: "La capecitabina es un profármaco del 5-fluorouracilo" },
+                    { id: "b", text: "El metotrexato tiene un efecto indirecto sobre la enzima timidilato sintasa al disminuir la cantidad del cofactor necesario N5 ,N10 -metilentetrahidrofolato" },
+                    { id: "c", text: "El uracilo no es un componente del ADN" },
+                    { id: "d", text: "El 5-Fluorouracilo es muy estable metabólicamente hablando y no se descompone en el organismo" }
+                ],
+                correctAnswer: "d",
+                explanation: "El 5-Fluorouracilo (5-FU) actúa tras activación metabólica a 5-Fluoro-2'-desoxiuridina monofosfato (FdUMP). Este metabolito activo es el que inhibe la timidilato sintasa. Además, profármacos como Ftorafur y Capecitabina se metabolizan en el organismo para liberar 5-FU. La necesidad de activación metabólica y la existencia de profármacos que lo generan por metabolismo demuestran que el 5-FU no es metabólicamente estable, sino que participa activamente en rutas metabólicas. Las opciones a, b y c son coherentes: Capecitabina es un profármaco de 5-FU; Metotrexato inhibe DHFR, reduciendo los niveles de cofactor (THF) necesarios para la timidilato sintasa, afectándola indirectamente; y el uracilo no forma parte del ADN (donde se encuentra la timina, 'T')."
+            },
+            {
+                id: 68,
+                question: "Los fármacos TKI que son inhibidores de los receptores EGF (EGFR) producen su actividad antitumoral al:",
+                options: [
+                    { id: "a", text: "inhibir el proceso de autofosforilación de los receptores EGFR" },
+                    { id: "b", text: "inhibir la metabolización en las células tumorales" },
+                    { id: "c", text: "inhibir las polimerasas encargadas de la duplicación del ADN celular" },
+                    { id: "d", text: "inhibir la síntesis del ADN" }
+                ],
+                correctAnswer: "a",
+                explanation: "Los inhibidores de quinasas como Gefitinib y Erlotinib actúan sobre el Receptor del Factor de Crecimiento Epidérmico (EGFR-TK), que es una Tirosina Quinasa (TK). Las quinasas transfieren un grupo fosfato desde el ATP a proteínas, y en el caso del EGFR, su actividad TK es crucial para la señalización celular que promueve el crecimiento. Los inhibidores de quinasas actúan compitiendo con el ATP por su sitio de unión en la enzima, bloqueando así su capacidad de fosforilar. Inhibir la actividad quinasa del receptor bloquea las señales de crecimiento celular, lo cual incluye la inhibición de las fosforilaciones que activan la cascada de señalización iniciada por el receptor."
+            },
+            {
+                id: 69,
+                question: "Los compuestos inhibidores de tirosina kinasas actúan sobre",
+                options: [
+                    { id: "a", text: "Proteinas intracelulares" },
+                    { id: "b", text: "Enzimas que catalizan la hidrolisis de péptidos" },
+                    { id: "c", text: "Proteinas que tienen una doble funcionalidad de receptores y enzimas" },
+                    { id: "d", text: "Canales iónicos que se encuentran en la membrana celular" }
+                ],
+                correctAnswer: "c",
+                explanation: "Los inhibidores de quinasas como fármacos que bloquean señales de crecimiento celular. Mencionan específicamente a los inhibidores de EGFR (Gefitinib, Erlotinib) que actúan sobre la Tirosina Quinasa del Receptor del Factor de Crecimiento Epidérmico (EGFR-TK). Esto describe una proteína que funciona tanto como receptor (unión a factores de crecimiento) como enzima (actividad tirosina quinasa). Aunque también hay quinasas puramente intracelulares que son dianas, el ejemplo clave de receptores con actividad quinasa (como EGFR) valida la opción que describe una doble funcionalidad."
+            },
+            {
+                id: 70,
+                question: "Los alquenos y los grupos aromáticos pueden ser metabolizados a dioles. ¿Qué enzimas están implicadas?",
+                options: [
+                    { id: "a", text: "Enzimas del citocromo P450" },
+                    { id: "b", text: "Epóxido hidrolasa" },
+                    { id: "c", text: "Las dos cosas anteriores" },
+                    { id: "d", text: "Ninguna de las anteriores" }
+                ],
+                correctAnswer: "c",
+                explanation: "Las enzimas de la familia Citocromo P-450 (CYP) son el catalizador esencial y el sistema enzimático principal en las reacciones de oxidación de Fase I, incluyendo oxidaciones alílicas (en alquenos) y aromáticas. La hidrólisis es también un tipo de reacción metabólica de Fase I."
+            },
+            {
+                id: 71,
+                question: "¿Cuál de las siguientes enzimas no participa en la catalización de una reacción metabólica de fase I?",
+                options: [
+                    { id: "a", text: "Monooxigenasas que contienen flavina" },
+                    { id: "b", text: "Monoaminoxidasas" },
+                    { id: "c", text: "Glucuroniltransferasa" },
+                    { id: "d", text: "Esterasas" }
+                ],
+                correctAnswer: "c",
+                explanation: "Las reacciones de Fase I del metabolismo de fármacos incluyen principalmente oxidación, reducción e hidrólisis. La oxidación puede ser catalizada por sistemas como las Monooxigenasas que contienen flavina o las Monoaminoxidasas (MAO). La hidrólisis es promovida por esterasas. La Glucuroniltransferasa cataliza la conjugación con ácido glucurónico, que es una reacción principal que ocurre durante la Fase II del metabolismo de fármacos."
+            },
+            {
+                id: 72,
+                question: "¿Cual de las siguientes familia de compuestos NO interacciona con las unidades ribosiomales de las bacterias?",
+                options: [
+                    { id: "a", text: "Macrólidos" },
+                    { id: "b", text: "Aminoacridinas" },
+                    { id: "c", text: "Tetraciclinas" },
+                    { id: "d", text: "Aminoglicósidos" }
+                ],
+                correctAnswer: "b",
+                explanation: "Las Aminoacridinas ejercen su mecanismo de acción al actuar sobre el ADN bacteriano mediante intercalación. Las familias de compuestos Macrólidos, Tetraciclinas, y Aminoglicósidos son mencionadas como antibióticos que actúan uniéndose a las subunidades ribosomales bacterianas para inhibir la síntesis proteica."
+            },
+            {
+                id: 73,
+                question: "Los compuestos 1-4 tienen actividad",
+                options: [
+                    { id: "a", text: "Antitumoral" },
+                    { id: "b", text: "Antibiótica" },
+                    { id: "c", text: "Antiviral" },
+                    { id: "d", text: "Todas las anteriores" }
+                ],
+                correctAnswer: "c",
+                explanation: "Los compuestos referenciados (no mostrados visualmente aquí) poseen actividad antiviral."
+            },
+            {
+                id: 74,
+                question: "De los compuestos 1-4 que aparecen en la pregunta anterior, aquél que tiene el azúcar que se encuentra en los nucleósidos naturales es el",
+                options: [
+                    { id: "a", text: "1" },
+                    { id: "b", text: "2" },
+                    { id: "c", text: "3" },
+                    { id: "d", text: "4" }
+                ],
+                correctAnswer: "d",
+                explanation: "De los compuestos referenciados (no mostrados visualmente aquí), el compuesto 4 es el que contiene el azúcar natural de los nucleósidos."
+            },
+            {
+                id: 75,
+                question: "La conversión del desoxiuridilato (dUMP) a desoxitimidilato (dTMP) por medio de la timidilato sintasa en las células eucariotas se esencial para",
+                options: [
+                    { id: "a", text: "sintetizar ARN" },
+                    { id: "b", text: "sintetizar ADN" },
+                    { id: "c", text: "sintetizar los aminoácidos esenciales" },
+                    { id: "d", text: "sintetizar los fosfolípidos de la membrana celular" }
+                ],
+                correctAnswer: "b",
+                explanation: "El 5-Fluorouracilo (5-FU) ejerce su acción antitumoral principal al ser un inhibidor de la timidilato sintetasa (TS). La timidilato sintetasa es una enzima crucial para la síntesis de dTMP. La síntesis de dTMP a partir de dUMP es un paso esencial en la síntesis de pirimidinas necesarias para el ADN. El FdUMP, metabolito activo del 5-FU, actúa como inhibidor suicida de la Timidilato Sintasa, bloqueando la catálisis de la metilación de dUMP a dTMP. Esta inhibición paraliza la síntesis de timidilato, afectando así la replicación celular al detener la síntesis de ADN."
+            }
+        ];
+
+        // Elementos del DOM
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackContainerEl = document.getElementById('feedback-container');
+        const feedbackTextEl = document.getElementById('feedback-text');
+        const explanationTextEl = document.getElementById('explanation-text');
+        const nextButtonEl = document.getElementById('next-button');
+        const restartButtonEl = document.getElementById('restart-button');
+        const playAgainButtonEl = document.getElementById('play-again-button');
+        const progressTextEl = document.getElementById('progress-text');
+        const scoreTextEl = document.getElementById('score-text');
+        const resultsContainerEl = document.getElementById('results-container');
+        const finalScoreTextEl = document.getElementById('final-score-text');
+        const cardAreaEl = document.getElementById('card-area');
+        const progressAndScoreEl = document.getElementById('progress-and-score');
+        const gameFooterEl = document.getElementById('navigation-container');
+
+
+        // Estado del juego
+        let shuffledQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questionAnswered = false;
+
+        // Función para barajar las preguntas
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Iniciar el juego
+        function initGame() {
+            shuffledQuestions = shuffleArray([...questions]);
+            currentQuestionIndex = 0;
+            score = 0;
+            questionAnswered = false;
+            
+            resultsContainerEl.classList.add('hidden');
+            cardAreaEl.classList.remove('hidden');
+            progressAndScoreEl.classList.remove('hidden');
+            gameFooterEl.classList.remove('hidden');
+            document.getElementById('game-container').querySelector('header h1').classList.remove('hidden');
+
+
+            loadQuestion();
+            updateScoreDisplay();
+        }
+
+        // Cargar una pregunta
+        function loadQuestion() {
+            questionAnswered = false;
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+
+            questionTextEl.textContent = currentQuestion.question;
+            // Actualizar el texto de progreso dinámicamente con la longitud del array barajado
+            progressTextEl.textContent = `Pregunta ${currentQuestionIndex + 1} / ${shuffledQuestions.length}`;
+            
+            optionsContainerEl.innerHTML = ''; // Limpiar opciones anteriores
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'sm:p-4', 'border-2', 'border-slate-300', 'rounded-lg', 'hover:bg-slate-100', 'focus:outline-none', 'focus:ring-2', 'focus:ring-sky-500', 'text-slate-700');
+                button.innerHTML = `<span class="font-bold">${option.id.toUpperCase()})</span> ${option.text}`;
+                button.dataset.optionId = option.id;
+                button.addEventListener('click', () => handleOptionClick(option.id, button));
+                optionsContainerEl.appendChild(button);
+            });
+
+            feedbackContainerEl.classList.add('hidden');
+            nextButtonEl.classList.add('hidden');
+        }
+
+        // Manejar clic en una opción
+        function handleOptionClick(selectedOptionId, clickedButton) {
+            if (questionAnswered) return; // Evitar múltiples respuestas
+            questionAnswered = true;
+
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            const isCorrect = selectedOptionId === currentQuestion.correctAnswer;
+
+            // Deshabilitar todos los botones de opción
+            Array.from(optionsContainerEl.children).forEach(btn => {
+                btn.disabled = true;
+                // Quitar clases de hover/focus para que no interfieran con los colores de feedback
+                btn.classList.remove('hover:bg-slate-100', 'focus:ring-sky-500');
+            });
+            
+            if (isCorrect) {
+                score++;
+                feedbackTextEl.textContent = '¡Correcto!';
+                feedbackTextEl.className = 'text-lg font-bold mb-2 text-green-600';
+                clickedButton.classList.add('correct');
+            } else {
+                feedbackTextEl.textContent = 'Incorrecto.';
+                feedbackTextEl.className = 'text-lg font-bold mb-2 text-red-600';
+                clickedButton.classList.add('incorrect');
+                // Resaltar la respuesta correcta
+                const correctButton = optionsContainerEl.querySelector(`[data-option-id="${currentQuestion.correctAnswer}"]`);
+                if (correctButton) {
+                    correctButton.classList.add('actual-correct');
+                }
+            }
+
+            explanationTextEl.innerHTML = currentQuestion.explanation; // Usar innerHTML si la explicación tiene formato
+            feedbackContainerEl.classList.remove('hidden');
+            updateScoreDisplay();
+            nextButtonEl.classList.remove('hidden');
+        }
+
+        // Actualizar visualización de la puntuación
+        function updateScoreDisplay() {
+            scoreTextEl.textContent = `Puntuación: ${score}`;
+        }
+
+        // Mostrar resultados finales
+        function showResults() {
+            cardAreaEl.classList.add('hidden');
+            progressAndScoreEl.classList.add('hidden');
+            nextButtonEl.classList.add('hidden');
+            // Ocultar el título principal y el botón de reiniciar de la pantalla de juego
+            document.getElementById('game-container').querySelector('header h1').classList.add('hidden');
+            restartButtonEl.classList.add('hidden'); // Ocultar el botón de reiniciar de la parte inferior
+            gameFooterEl.classList.add('hidden');
+
+            // Actualizar el texto de la puntuación final con la longitud correcta del array de preguntas
+            finalScoreTextEl.textContent = `Tu puntuación final es: ${score} de ${shuffledQuestions.length}.`;
+            resultsContainerEl.classList.remove('hidden');
+            // Asegurarse que el botón de reiniciar principal (el de abajo) esté oculto y el de "Jugar de Nuevo" visible
+            playAgainButtonEl.classList.remove('hidden');
+        }
+        
+        // Event listeners para los botones de navegación
+        nextButtonEl.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        restartButtonEl.addEventListener('click', initGame);
+        playAgainButtonEl.addEventListener('click', () => {
+             // Al jugar de nuevo, asegurarse que el botón de reiniciar de abajo esté visible
+            restartButtonEl.classList.remove('hidden');
+            initGame();
+        });
+
+        // Iniciar el juego al cargar la página
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
